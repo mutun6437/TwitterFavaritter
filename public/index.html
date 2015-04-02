@@ -4,7 +4,7 @@
 	検索ワード:<input type="text" id="text">
 	<button name="submit" value="送信" onClick="submit()">送信</button>
 
-
+	<div id="result"></div>
 
 <script type="text/javascript">
 
@@ -19,6 +19,8 @@ function submit(){
 
 }
 
-
+socket.on("result",function(err){
+	document.getElementById("result").value="検索内容10件をふぁぼりました";
+});
 
 </script>

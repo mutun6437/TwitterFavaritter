@@ -124,7 +124,10 @@ io.sockets.on("connection", function (socket) {
         twit.get('search/tweets', {q: searchText,count:10}, function(error, tweets, response){
             var tweet = tweets.statuses;  
             var randomTweet = randIndex(tweet); 
-            twit.post('favorites/create', { id: randomTweet.id_str }, function(err){console.log(err)});
+            twit.post('favorites/create', { id: randomTweet.id_str }, function(err){
+                console.log(err);
+                socket.emit("result",err);
+            });
         });
 
     });
