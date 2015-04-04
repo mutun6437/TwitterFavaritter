@@ -227,12 +227,7 @@ io.sockets.on("connection", function (socket) {
           //console.log(tweet);
         }
       });
-
     });
-
-
-
-
 
     //お気に入り登録
     socket.on("favorite",function(data){

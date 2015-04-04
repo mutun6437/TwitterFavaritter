@@ -20,6 +20,21 @@ function submit(target){
 		var data = {text:text,day:day,count:count};
 
 		socket.emit("favorite",data);
+	}else if(target==2){
+		var target = document.getElementById("b_target").value;
+
+
+		//TODO 処理によって別のソケットにする
+		if(target==="ツイート"){
+
+		}else if(target==="お気に入り"){
+
+		}else if(target==="リツイート"){
+
+		}
+
+
+
 	}
 
 }

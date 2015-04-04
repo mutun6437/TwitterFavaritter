@@ -31,9 +31,29 @@
 
 
 <div id="bot">
-	
+	<h1>BOT登録</h1>
 
-	
+	対象:<select id="b_target">
+			<option>ツイート</option>
+			<option>お気に入り</option>
+			<option>リツイート</option>
+		</select>	 
+	<br>
+
+	間隔:<select id="b_span">
+			<option>半日</option>
+			<option>一日</option>
+			<option>一時間</option>
+		</select>
+	<br>
+
+	件数(お気に入り):<input type="number" value="1" id="b_count">
+	<br>
+	内容:<input type="text" id="b_word">
+	<br>
+
+	<button name="submit" value="送信" onClick="submit(2)">送信</button>
+
 
 
 <ul>
