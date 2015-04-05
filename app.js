@@ -1,4 +1,4 @@
-
+//基幹モジュール
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -7,9 +7,12 @@ var session = require('cookie-session')
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
+//ルーティング
 var routes = require('./routes/index');
 var users = require('./routes/users');
 
+
+//Express
 var app = express();
 
 var http = require('http');
@@ -27,6 +30,21 @@ var passport = require('passport')
 
 
 
+//MongoDB
+
+
+var db = require('./model/database');
+
+var model = require('./model/database.js'),
+    User  = model.User;
+var UserData = model.userData;
+
+//起動時削除　＊＊＊＊後でなくす
+User.remove({},function(err){console.log("削除エラー"+err)});
+UserData.remove({},function(err){console.log("削除エラー"+err)});
+
+
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -38,7 +56,7 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(session({ secret: 'keyboard cat' }));
+//app.use(session({ secret: 'keyboard cat' }));
 
     //app.use(express.static(__dirname + '/public'));
   app.use('/static', express.static(__dirname + '/public'));
@@ -183,35 +201,52 @@ function initTwitter(){
         access_token_key: aToken,
         access_token_secret: aSecret
     });
+
+
+
+    twit.get("users/search",{q:"アニメ"},function(err,user,response){
+      console.log("ユーザ"+user[0].id_str);
+      twit.get("statuses/user_timeline",{user_id:user[0].id_str},function(err,tweets,retweet){
+        console.log(tweets[0].text);
+      });
+
+    });
 }
 
 
 
 
-/*
-twit.get('search/tweets', {q: '',count:10}, function(error, tweets, response){
-  //console.log(tweets);
-  
-    var tweet = tweets.statuses;  
-    var randomTweet = randIndex(tweet); 
-    
-    twit.post('favorites/create', { id: randomTweet.id_str }, function(err){console.log(err)});
-    
-});
 
-*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 var targets = [];
 
-
-
-
-
-
-
-
-
-
+var favIntervals = [];
+var tweetIntervals = [];
+var retweetIntervals = [];
 
 
 io.sockets.on("connection", function (socket) {
@@ -219,36 +254,43 @@ io.sockets.on("connection", function (socket) {
     //ツイート
     socket.on("tweet",function(data){
       console.log("つぶやきます");
-
-      var text = data.text;
-
-      twit.post('statuses/update', {status: text}, function(error, tweet, response){
-        if (!error) {
-          //console.log(tweet);
-        }
-      });
+      createTweet(data);      
     });
 
     //お気に入り登録
     socket.on("favorite",function(data){
         //console.log("お気に入り登録します"+JSON.stringify(data));
-        twit.get('search/tweets', {q: data.text,count:data.count,until:data.day}, function(error, tweets, response){
-            console.log("ツイートの検索が完了しました"+JSON.stringify(tweets));
-            var _tweets= tweets.statuses;  
-            console.log("_tweets");
-            
-            for(i=0;i<_tweets.length;i++){
-              console.log(i+"件目。お気に入り登録");
-              twit.post('favorites/create', { id: _tweets[i].id_str }, function(err){
-                  console.log(err);
-                  socket.emit("result",err);
-              });
-            }
-          console.log("ツイートのお気に入りが完了しました");
-        });
+        favoriteTweet(data);
     });
-    //End Favorite
 
+    //リツイート
+    socket.on("retweet",function(data){
+        //console.log("お気に入り登録します"+JSON.stringify(data));
+        retweetTweet(data);
+    });
+    
+    
+
+    ////////////////////////
+    //BOT//////////////////
+    //////////////////////
+    socket.on("bot/tweet",function(data){
+      tweetIntervals[tweetIntervals.length]= setInterval(function(){
+        createTweet(data);
+      }, data.interval)
+    });
+    socket.on("bot/favorite",function(data){
+      favIntervals[favIntervals.length] = setInterval(function(){
+        //console.log('繰り返します'+data);
+        favoriteTweet(data);
+      }, data.interval);               
+    });
+
+    socket.on("bot/retweet",function(data){
+      retweetIntervals[retweetIntervals.length] = setInterval(function(){
+        retweetTweet(data);
+      },data.interval); 
+    });
 
 
 });
@@ -256,6 +298,39 @@ io.sockets.on("connection", function (socket) {
 
 
 
+function createTweet(data){
+  var text = data.text;
+  twit.post('statuses/update', {status: text}, function(error, tweet, response){
+    if (!error) {
+      //console.log(tweet);
+    }
+  });
+}
+
+
+function retweetTweet(data){
+  //実装保留
+
+}
+
+
+
+function favoriteTweet(data){
+  twit.get('search/tweets', {q: data.text,count:data.count,until:data.day}, function(error, tweets, response){
+      console.log("ツイートの検索が完了しました"+JSON.stringify(tweets));
+      var _tweets= tweets.statuses;  
+      console.log("_tweets");
+      
+      for(i=0;i<_tweets.length;i++){
+        console.log(i+"件目。お気に入り登録");
+        twit.post('favorites/create', { id: _tweets[i].id_str }, function(err){
+            console.log(err);
+            io.socket.emit("result",err);
+        });
+      }
+    console.log("ツイートのお気に入りが完了しました");
+  });
+}
 
 
 
@@ -263,10 +338,4 @@ io.sockets.on("connection", function (socket) {
 
 
 
-
-
-function randIndex (arr) {
-  var index = Math.floor(arr.length*Math.random());
-  return arr[index];
-};
 
