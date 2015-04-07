@@ -10,8 +10,12 @@ var db  = mongoose.createConnection(url, function(err, res){
 
 // Modelの定義
 var UserSchema = new mongoose.Schema({
-    email    : String,
-    password  : String
+    uId    : String,
+    nameId :String,
+    name  : String,
+    location :String,
+    tags :[String],
+    weight:Number
 },{collection: 'info'});
 
 exports.User = db.model('User', UserSchema);

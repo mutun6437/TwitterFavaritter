@@ -3,7 +3,7 @@ var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
-var session = require('cookie-session')
+var session = require('express-session')
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
@@ -62,12 +62,13 @@ app.use(cookieParser());
   app.use('/static', express.static(__dirname + '/public'));
 
   // -- 追加しところ --
-  app.use(session({secret: "hogesecret"})); // session有効
+  
   app.use(passport.initialize()); // passportの初期化処理
   app.use(passport.session()); // passportのsessionを設定(中身はしらぬ)
+  app.use(session({secret: "hogesecret"})); // session有効
 
   passport.serializeUser(function(user, done){
-    done(null, user);
+    done(null, user.id);
   });
   passport.deserializeUser(function(obj, done){
     done(null, obj);
@@ -99,7 +100,7 @@ app.use(cookieParser());
    
   // Twitter callback Routing
   app.get("/auth/twitter/callback", passport.authenticate('twitter', {
-    successRedirect: '/logined',
+    successRedirect: '/twitter',
     failureRedirect: '/login'
   }));
 
@@ -108,19 +109,18 @@ app.use(cookieParser());
 
 
 app.get("/",function(req,res){
-    console.log("dada"+req.session.user);
-    if(req.session.user==undefined){
-        res.redirect("./login");
-    }else{
-        initTwitter();
-        res.sendfile("./public/index.html");
-    }
-
+    console.log("dada"+passport.session);
+    
+    res.redirect("./login");
+        
+    
 });
 
-app.get("/logined",function(req,res){
-    req.session.user = "ログインしました";
-    res.redirect("/");
+
+
+app.get("/twitter",function(req,res){
+    initTwitter();
+    res.sendfile("./public/index.html");
 });
 
 
@@ -195,6 +195,11 @@ var twit;
 
 
 function initTwitter(){
+
+  if(aToken==undefined){
+    console.log("ログインし直し");
+    return
+  }else{ 
     twit = new twitter({
         consumer_key: 'Z8Gv0AR5d44ZqxWyECvcAg',
         consumer_secret: 'CGaYTPgBmNApy27Xo1AdPRExMv3fRYzwkl2qXF9GM',
@@ -204,13 +209,33 @@ function initTwitter(){
 
 
 
-    twit.get("users/search",{q:"アニメ"},function(err,user,response){
-      console.log("ユーザ"+user[0].id_str);
+    twit.get("users/search",{q:"エンジニア"},function(err,user,response){
+      console.log("ユーザ"+JSON.stringify(user[0].id_str));
+
+      //形態素解析して名詞をタグとして保存
+
+      for(i=0;i<user.length;i++){
+        var json = {uID:user[i].id_str,name:user[i].name,nameId:user[i].screen_name,location:user[i].location,tags:[""],weight:1}
+
+        console.log(json);
+
+        var data = new User(json);
+
+        data.save();
+      }
+
+     
+      User.find({},function(err,docs){
+        console.log("中身"+docs);
+      });
+
       twit.get("statuses/user_timeline",{user_id:user[0].id_str},function(err,tweets,retweet){
-        console.log(tweets[0].text);
+        //console.log(tweets[0]);
       });
 
     });
+
+  }
 }
 
 
