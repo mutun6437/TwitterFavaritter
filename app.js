@@ -40,9 +40,10 @@ var model = require('./model/database.js'),
 var UserData = model.userData;
 
 //起動時削除　＊＊＊＊後でなくす
+/*
 User.remove({},function(err){console.log("削除エラー"+err)});
 UserData.remove({},function(err){console.log("削除エラー"+err)});
-
+*/
 
 
 // view engine setup
@@ -128,6 +129,10 @@ app.get("/login",function(req,res){
     res.redirect("/auth/twitter");
 });
 
+app.get("/analyze",function(req,res){
+    res.sendfile("./public/analyze.html");
+});
+
 
 
 
@@ -205,43 +210,18 @@ function initTwitter(){
         consumer_secret: 'CGaYTPgBmNApy27Xo1AdPRExMv3fRYzwkl2qXF9GM',
         access_token_key: aToken,
         access_token_secret: aSecret
-    });
-
-
-
-    twit.get("users/search",{q:"エンジニア"},function(err,user,response){
-      console.log("ユーザ"+JSON.stringify(user[0].id_str));
-
-      //形態素解析して名詞をタグとして保存
-
-      for(i=0;i<user.length;i++){
-        var json = {uID:user[i].id_str,name:user[i].name,nameId:user[i].screen_name,location:user[i].location,tags:[""],weight:1}
-
-        console.log(json);
-
-        var data = new User(json);
-
-        data.save();
-      }
-
-     
-      User.find({},function(err,docs){
-        console.log("中身"+docs);
-      });
-
-      twit.get("statuses/user_timeline",{user_id:user[0].id_str},function(err,tweets,retweet){
-        //console.log(tweets[0]);
-      });
-
-    });
+    });   
 
   }
 }
 
 
+/*
+twit.get("statuses/user_timeline",{user_id:user[0].id_str},function(err,tweets,retweet){
+        //console.log(tweets[0]);
+      });
 
-
-
+*/
 
 
 
@@ -318,7 +298,83 @@ io.sockets.on("connection", function (socket) {
     });
 
 
+    ///////////////////////
+    //データベース/////////////
+    //////////////////////
+    socket.on("getUserCount",function(){
+      User.find({},function(err,docs){
+        var count = docs.length;
+        socket.emit("postUserCount",count);
+      });
+    });
+
+    socket.on("searchUser",function(text){
+      findUserProfile(text);
+    });
+
+
+
 });
+
+
+
+
+
+
+
+
+
+
+function findUserProfile(text){
+  twit.get("users/search",{q:text,page:Math.floor(Math.random()*100)},function(err,user,response){
+    //console.log("ユーザ"+JSON.stringify(user[0].id_str));
+    
+    //形態素解析して名詞をタグとして保存
+    var tags = [];
+
+    for(i=0;i<user.length;i++){
+      var json = {uID:user[i].id_str,name:user[i].name,nameId:user[i].screen_name,location:user[i].location,tags:[""],weight:1}
+      //ユーザデータを保存
+      storeUserData(json);       
+    }    
+  });
+}
+
+
+
+
+
+
+
+
+//                              //
+// 既にユーザが登録されて　　　　　　　　　　　  //
+//            いないか判断し、保存    //
+function storeUserData(data){
+  User.findOne({name:data.name},function(err,doc){
+    if(doc){
+      console.log("存在します");
+    }else{
+      console.log("保存します");
+      var userData = new User(data);
+      userData.save(function(err){});
+    }   
+  });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
