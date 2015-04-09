@@ -331,12 +331,13 @@ function findUserProfile(text){
     
     //形態素解析して名詞をタグとして保存
     var tags = [];
+    var total = 0;
 
     for(i=0;i<user.length;i++){
       var json = {uID:user[i].id_str,name:user[i].name,nameId:user[i].screen_name,location:user[i].location,tags:[""],weight:1}
       //ユーザデータを保存
-      storeUserData(json);       
-    }    
+      storeUserData(json);      
+    }
   });
 }
 
@@ -351,7 +352,9 @@ function findUserProfile(text){
 // 既にユーザが登録されて　　　　　　　　　　　  //
 //            いないか判断し、保存    //
 function storeUserData(data){
+  var result=0;
   User.findOne({name:data.name},function(err,doc){
+    console.log("中身"+doc);
     if(doc){
       console.log("存在します");
     }else{
@@ -398,15 +401,16 @@ function retweetTweet(data){
 
 function favoriteTweet(data){
   twit.get('search/tweets', {q: data.text,count:data.count,until:data.day}, function(error, tweets, response){
-      console.log("ツイートの検索が完了しました"+JSON.stringify(tweets));
+      //console.log("ツイートの検索が完了しました"+JSON.stringify(tweets));
       var _tweets= tweets.statuses;  
-      console.log("_tweets");
+      //console.log("_tweets");
       
       for(i=0;i<_tweets.length;i++){
         console.log(i+"件目。お気に入り登録");
+        followUser(_tweets[i].screen_name);
         twit.post('favorites/create', { id: _tweets[i].id_str }, function(err){
             console.log(err);
-            io.socket.emit("result",err);
+            //io.socket.emit("result",err);
         });
       }
     console.log("ツイートのお気に入りが完了しました");
@@ -418,5 +422,10 @@ function favoriteTweet(data){
 
 
 
-
-
+//フォロー方法
+function followUser(userId){
+  
+  twit.post("friendships/create",{screen_name:userId,follow:true},function(err){
+    console.log("フォローします"+JSON.stringify(err));
+  });
+}

@@ -41,3 +41,8 @@ socket.on("postUserCount",function(data){
 socket.on("updateState",function(text){
 	//テキスト更新
 });
+
+
+socket.on("disconnect",function(){
+	location.href = "../";
+});
