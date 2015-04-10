@@ -354,11 +354,11 @@ function findUserProfile(text){
 function storeUserData(data){
   var result=0;
   User.findOne({name:data.name},function(err,doc){
-    console.log("中身"+doc);
+    //console.log("中身"+doc);
     if(doc){
-      console.log("存在します");
+      //console.log("存在します");
     }else{
-      console.log("保存します");
+      //console.log("保存します");
       var userData = new User(data);
       userData.save(function(err){});
     }   
@@ -400,18 +400,21 @@ function retweetTweet(data){
 
 
 function favoriteTweet(data){
-  twit.get('search/tweets', {q: data.text,count:data.count,until:data.day}, function(error, tweets, response){
+  twit.get('search/tweets', {q: data.text,count:data.count,until:data.day,locale:"ja"}, function(error, tweets, response){
       //console.log("ツイートの検索が完了しました"+JSON.stringify(tweets));
       var _tweets= tweets.statuses;  
       //console.log("_tweets");
       
       for(i=0;i<_tweets.length;i++){
         console.log(i+"件目。お気に入り登録");
-        followUser(_tweets[i].screen_name);
+        followUser(_tweets[i].user.screen_name);
+
+
         twit.post('favorites/create', { id: _tweets[i].id_str }, function(err){
             console.log(err);
             //io.socket.emit("result",err);
         });
+
       }
     console.log("ツイートのお気に入りが完了しました");
   });
@@ -423,9 +426,9 @@ function favoriteTweet(data){
 
 
 //フォロー方法
-function followUser(userId){
-  
+function followUser(userId){  
+  //console.log("ユーザ名"+userId)
   twit.post("friendships/create",{screen_name:userId,follow:true},function(err){
-    console.log("フォローします"+JSON.stringify(err));
+    //console.log("フォローします"+JSON.stringify(err));
   });
 }
