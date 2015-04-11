@@ -212,6 +212,8 @@ function initTwitter(){
         access_token_secret: aSecret
     });   
 
+    
+
   }
 }
 
@@ -428,7 +430,10 @@ function favoriteTweet(data){
 //フォロー方法
 function followUser(userId){  
   //console.log("ユーザ名"+userId)
+
   twit.post("friendships/create",{screen_name:userId,follow:true},function(err){
     //console.log("フォローします"+JSON.stringify(err));
   });
 }
+
+
