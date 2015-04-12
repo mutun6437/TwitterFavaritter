@@ -10,9 +10,7 @@ var socket = io.connect('http://localhost:3000');
 
 
 
-function searchUser(){
-	console.log(Math.floor(Math.random()*1000));
-	
+function searchUser(){	
 	var text = document.getElementById("searchUserText").value;
 	socket.emit("searchUser",text);
 }
@@ -20,6 +18,7 @@ function searchUser(){
 
 function updateUserCount(){
 	//ユーザ数の呼び出し要求
+	console.log("ユーザ数要求します");
 	socket.emit("getUserCount",function(){});
 }
 
