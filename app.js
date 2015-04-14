@@ -255,7 +255,8 @@ twit.get("statuses/user_timeline",{user_id:user[0].id_str},function(err,tweets,r
 
 
 var uSearchWord = ["エンジニア","IT","プログラマ","SE","開発","ゲーム開発"];
-var fSearchWord = ["エンジニア","IT","プログラマ","SE","開発","ゲーム開発","残業","みなし残業"];
+//var fSearchWord = ["エンジニア","IT","プログラマ","システムエンジニア","開発","ゲーム開発","残業","Ruby","PHP","Node.js","JAVA"];
+var fSearchWord = ["絵の仕事欲しい","残業辛い","仕事やめたい","開発したい","お仕事募集","SEやってます"];
 var tweetList = ["プログラム難しいなあ・・・","設計書書くよん","残業つらぽよ","アニメ面白いのないかな？","ライブいきたい","フレームワーク・・・","学習コスト高いな","【定期】都内でエンジニアやっています。フォローリフォローご自由に！","【定期】都内でエンジニアやっています。フォローリフォローご自由に！","【定期】都内でエンジニアやっています。フォローリフォローご自由に！","【定期】都内でエンジニアやっています。フォローリフォローご自由に！",
                 "オブジェクト指向かあ・・・","インフラわかんにゃい","ソースコード見直そ","勉強回！","Rubyって面白いのかな？","JAVAやるよっ","フロント周りのコーディングが得意ですっ","あー仕事終わったー"];
 
@@ -333,6 +334,11 @@ io.sockets.on("connection", function (socket) {
     });
 
 
+    socket.on("searchUserWeight",function(){
+      searchUserWeight();
+    });
+
+
 
 });
 
@@ -399,7 +405,7 @@ function storeUserData(data,isTweet){
 
 function searchUserWeight(value){
   console.log("検索します");
-  User.find({ weight : { $gte : 10 } },function(err,doc){
+  User.find({ weight : { $gte : value} },function(err,doc){
     console.log(doc);
   });
 }
@@ -475,6 +481,18 @@ function followUser(userId){
 
 
 function setFindTimer(){
+
+  console.log("ツイートします");
+  var index = Math.floor(Math.random()*tweetList.length);
+  createTweet({text:tweetList[index]});
+
+  //お気に入り登録
+  var index = Math.floor(Math.random()*fSearchWord.length);
+  var json = {text:fSearchWord[index],count:30};
+  favoriteTweet(json);
+
+  searchUserWeight(2);
+
   userTimer = setInterval(function(){
     //console.log("お気に入り登録します");
     //console.log("検索します");
@@ -488,7 +506,7 @@ function setFindTimer(){
     var index = Math.floor(Math.random()*fSearchWord.length);
     var json = {text:fSearchWord[index],count:30};
     favoriteTweet(json);
-  },7200000);
+  },3600000);
 
   favoriteTimer2 = setInterval(function(){
     console.log("お気に入り登録します２");
@@ -497,7 +515,7 @@ function setFindTimer(){
     var text =  fSearchWord[index1]+" "+fSearchWord[index2];
     var json = {text:text,count:30};
     favoriteTweet(json);
-  },10800000);
+  },5400000);
 
   tweetTimer = setInterval(function(){
     var index = Math.floor(Math.random()*tweetList.length);
