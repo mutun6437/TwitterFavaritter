@@ -75,3 +75,7 @@
 			.nohide {
 				display : block;
 			}
+
+			.tweetTable th {
+				background-color: #cccccc;
+			}

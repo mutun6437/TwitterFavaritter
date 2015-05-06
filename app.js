@@ -254,11 +254,30 @@ twit.get("statuses/user_timeline",{user_id:user[0].id_str},function(err,tweets,r
 
 
 
-var uSearchWord = ["エンジニア","IT","プログラマ","SE","開発","ゲーム開発"];
+var uSearchWord = ["エンジニア","IT","プログラマ","SE","開発","ゲーム開発","Web"];
 //var fSearchWord = ["エンジニア","IT","プログラマ","システムエンジニア","開発","ゲーム開発","残業","Ruby","PHP","Node.js","JAVA"];
-var fSearchWord = ["絵の仕事欲しい","残業辛い","仕事やめたい","開発したい","お仕事募集","SEやってます"];
+var works = ["IT","SE","システムエンジニア","ゲーム","インフラ","Web","アプリ","Android","iOS"];
+var fSearchWord = ["残業辛い","仕事やめたい","開発したい","お仕事募集","つらい","フリーランス","仕事募集"];
+
+var design =["絵の仕事","Unity 仕事","イラストの仕事","イラスト　仕事　募集","Unity 募集","Web デザイン　仕事募集","デザイン　仕事　募集","Webデザイン　仕事募集","3D　モデリング　仕事"];
+
 var tweetList = ["プログラム難しいなあ・・・","設計書書くよん","残業つらぽよ","アニメ面白いのないかな？","ライブいきたい","フレームワーク・・・","学習コスト高いな","【定期】都内でエンジニアやっています。フォローリフォローご自由に！","【定期】都内でエンジニアやっています。フォローリフォローご自由に！","【定期】都内でエンジニアやっています。フォローリフォローご自由に！","【定期】都内でエンジニアやっています。フォローリフォローご自由に！",
                 "オブジェクト指向かあ・・・","インフラわかんにゃい","ソースコード見直そ","勉強回！","Rubyって面白いのかな？","JAVAやるよっ","フロント周りのコーディングが得意ですっ","あー仕事終わったー"];
+
+var tweetList2 = ["【定期】フリーランスのエンジニアやデザイナーの方にお仕事のご紹介をしておりますっ","【定期】イラストレイターさんも是非ご登録お願いいたします！","【定期】ゲーム業界で働きたい方おられましたらリプライお待ちしております～"];
+
+var badWords = "-未経験でも -レディス -メンズ -18歳以上 -占い -高収入 -在宅 -素人 -マッサージ -女の子 -風俗 -女優 -モデル -声 -歌 -介護 -会う -出会い -女子大生 -goo.gl -t.co";
+
+
+
+
+
+
+//ツイートした回数を数える リスト分だけ初期化
+var tweetCount = [];
+for(i=0;i<tweetList.length;i++){
+  tweetCount.push(0);
+}
 
 
 var targets = [];
@@ -338,6 +357,32 @@ io.sockets.on("connection", function (socket) {
       searchUserWeight();
     });
 
+    
+    //ツイートリストの送信
+    socket.on("getTweets",function(){
+      var json = {tweetList:tweetList,tweetCount:tweetCount}
+      socket.emit("setTweets",json);
+    });
+
+    socket.on("setNewTweet",function(text){
+      console.log("ツイートを追加します。内容【"+text+"】");
+      tweetList.push(text);
+      //新規ツイートの回数をリセット
+      tweetCount[tweetList.length-1]=0;
+      var json = {tweetList:tweetList,tweetCount:tweetCount}
+      socket.emit("setTweets",json);
+    });
+
+
+    //ツイートリストを削除
+    socket.on("removeTweet",function(index){
+      console.log("ツイートリスト番号"+index+"の【"+tweetList[index]+"】を削除します");
+      tweetList.splice(index,1);
+      var json = {tweetList:tweetList,tweetCount:tweetCount}
+      socket.emit("setTweets",json);
+    });
+
+
 
 
 });
@@ -352,7 +397,7 @@ io.sockets.on("connection", function (socket) {
 
 
 function findUserProfile(text){
-  twit.get("users/search",{q:text,page:Math.floor(Math.random()*100)},function(err,user,response){
+  twit.get("users/search",{q:text+" -rt -bot"+badWords,page:Math.floor(Math.random()*100)},function(err,user,response){
     //console.log("ユーザ"+JSON.stringify(user[0].id_str));
     
     //形態素解析して名詞をタグとして保存
@@ -439,27 +484,26 @@ function retweetTweet(data){
 
 function favoriteTweet(data){
   //until:data.until
-  twit.get('search/tweets', {q: data.text,count:data.count,lang:"ja"}, function(error, tweets, response){
+  twit.get('search/tweets', {q: data.text+" -rt -bot"+badWords,count:data.count,lang:"ja"}, function(error, tweets, response){
       //console.log("ツイートの検索が完了しました"+JSON.stringify(tweets));
       var _tweets= tweets.statuses;  
-      console.log(_tweets);
+      console.log(_tweets.length);
       
       for(i=0;i<_tweets.length;i++){
-        console.log(i+"件目。お気に入り登録");
-        //followUser(_tweets[i].user.screen_name);
-
-        twit.post('favorites/create', { id: _tweets[i].id_str }, function(err){
-            console.log(err);
-            //io.socket.emit("result",err);
-        });
-
-
-        var json = {uID:_tweets[i].user.id_str,name:_tweets[i].user.name,nameId:_tweets[i].user.screen_name,location:_tweets[i].user.location,tags:[""],weight:1}
-        //ユーザデータを保存
-        storeUserData(json,true); 
+        
+        
+              console.log(i+"件目。お気に入り登録:"+_tweets[i].text);
+              twit.post('favorites/create', { id: _tweets[i].id_str }, function(err){
+                  //console.log(err);
+                  //io.socket.emit("result",err);
+              });
 
 
-      }
+              var json = {uID:_tweets[i].user.id_str,name:_tweets[i].user.name,nameId:_tweets[i].user.screen_name,location:_tweets[i].user.location,tags:[""],weight:1}
+              //ユーザデータを保存
+              storeUserData(json,true); 
+            
+        }
     console.log("ツイートのお気に入りが完了しました");
   });
 }
@@ -478,20 +522,57 @@ function followUser(userId){
 
 
 
+function confirmTweet(text){
+  var isBad = false;
+
+  for(i=0;i<badWords.length;i++){
+    var reg = new RegExp(badWords[i]);
+    if(reg.test(text)){
+     isBad = true;
+     return isBad;
+     console.log("badWords");
+    }else{
+     //問題がなければなにもしない
+    }     
+  }
+  //適さないワードかどうか
+  return false;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 function setFindTimer(){
+  var date = getDayValue();
 
   console.log("ツイートします");
   var index = Math.floor(Math.random()*tweetList.length);
+  tweetCount[index]+=1; 
   createTweet({text:tweetList[index]});
 
-  //お気に入り登録
+  //お気に入り登録　IT
   var index = Math.floor(Math.random()*fSearchWord.length);
-  var json = {text:fSearchWord[index],count:30};
+  var index2 = Math.floor(Math.random()*works.length);
+  var text = fSearchWord[index]+" "+works[index2];
+  var json = {text:text,count:30,until:date};
   favoriteTweet(json);
 
-  searchUserWeight(2);
+  //お気に入り登録  デザイン
+  var index = Math.floor(Math.random()*fSearchWord.length);
+  var json = {text:design[index],count:30,until:date};
+  favoriteTweet(json);
+
+  //searchUserWeight(2);
 
   userTimer = setInterval(function(){
     //console.log("お気に入り登録します");
@@ -503,22 +584,24 @@ function setFindTimer(){
 
   favoriteTimer = setInterval(function(){
     console.log("お気に入り登録します１");
-    var index = Math.floor(Math.random()*fSearchWord.length);
-    var json = {text:fSearchWord[index],count:30};
+    var index = Math.floor(Math.random()*design.length);
+    var json = {text:design[index],count:30,until:date};
     favoriteTweet(json);
   },3600000);
 
   favoriteTimer2 = setInterval(function(){
     console.log("お気に入り登録します２");
     var index1 = Math.floor(Math.random()*fSearchWord.length);
-    var index2 = Math.floor(Math.random()*fSearchWord.length);
-    var text =  fSearchWord[index1]+" "+fSearchWord[index2];
-    var json = {text:text,count:30};
+    var index2 = Math.floor(Math.random()*works.length);
+    var text =  fSearchWord[index1]+" "+works[index2];
+    var json = {text:text,count:30,until:date};
     favoriteTweet(json);
-  },5400000);
+  },3600000);
 
   tweetTimer = setInterval(function(){
     var index = Math.floor(Math.random()*tweetList.length);
+    //ツイート回数を記憶
+    tweetCount[index]+=1; 
     createTweet({text:tweetList[index]});
   }, 3600000);
 
@@ -530,4 +613,33 @@ function crearTimers(){
   clearInterval(favoriteTimer);
   clearInterval(favoriteTimer2);
   clearInterval(tweetTimer);
+}
+
+
+
+
+
+
+
+
+
+
+
+function getDayValue(){
+
+
+
+  dd = new Date();
+  yy = dd.getYear();
+  mm = dd.getMonth() + 1;
+  dd = dd.getDate()-1;
+  if (yy < 2000) { yy += 1900; }
+  if (mm < 10) { mm = "0" + mm; }
+  if (dd < 10) { dd = "0" + dd; }
+  var today = yy + "-" + mm + "-" + dd;
+  //console.log(yy + "-" + mm + "-" + dd);
+  
+  
+  return today;
+
 }
